@@ -1,0 +1,338 @@
+<!-- Este é um código HTML/CSS/JavaScript completo para um Quiz Interativo. -->
+<!-- Ele pode ser incorporado diretamente em um Google Site. -->
+<!-- Utiliza Tailwind CSS para estilização e JavaScript para a lógica do quiz. -->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Limites e Derivadas na Gestão Pública</title>
+    <!-- Inclui o CDN do Tailwind CSS para estilização fácil e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para a fonte Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos adicionais para botões de resposta e feedback */
+        .answer-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .answer-button:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .answer-button.correct {
+            background-color: #10B981; /* Tailwind green-500 */
+            color: white;
+            pointer-events: none; /* Desabilita clique após resposta */
+        }
+        .answer-button.incorrect {
+            background-color: #EF4444; /* Tailwind red-500 */
+            color: white;
+            pointer-events: none; /* Desabilita clique após resposta */
+        }
+        .answer-button.disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .correct-answer-highlight {
+            background-color: #D1FAE5; /* Tailwind green-100 */
+            border: 2px solid #10B981; /* Tailwind green-500 */
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen p-4 sm:p-6 md:p-8">
+
+    <!-- Contêiner principal do quiz -->
+    <div id="quiz-container" class="bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-2xl max-w-sm sm:max-w-md md:max-w-2xl w-full text-center space-y-6">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-800 mb-6">Quiz: Limites e Derivadas na Gestão Pública</h1>
+
+        <!-- Seção da pergunta -->
+        <div id="question-section" class="space-y-4">
+            <p id="question-text" class="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800"></p>
+            <div id="answer-options" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mt-6">
+                <!-- Opções de resposta serão injetadas aqui pelo JS -->
+            </div>
+            <p id="feedback-text" class="text-base sm:text-lg mt-4 font-medium"></p>
+            <p id="hint-text" class="text-xs sm:text-sm text-gray-600 mt-2 italic hidden"></p>
+        </div>
+
+        <!-- Seção de navegação e controles -->
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 mt-8">
+            <button id="show-hint-button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-5 rounded-full shadow-md transition-colors duration-200 w-full sm:w-auto">
+                Mostrar Dica
+            </button>
+            <button id="next-question-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors duration-200 opacity-50 cursor-not-allowed w-full sm:w-auto" disabled>
+                Próxima Pergunta
+            </button>
+        </div>
+
+        <!-- Seção de resultados (inicialmente oculta) -->
+        <div id="results-section" class="hidden space-y-6">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-green-700">Quiz Concluído!</h2>
+            <p id="final-score" class="text-xl sm:text-2xl text-gray-800">Sua pontuação: <span class="font-bold">0</span> de 10</p>
+            <p id="results-message" class="text-base sm:text-xl text-gray-700"></p>
+            <button id="restart-quiz-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-colors duration-200 w-full sm:w-auto">
+                Reiniciar Quiz
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Dados do quiz (JSON do quiz_limites_derivadas_adm)
+        const quizData = {
+          "questions": [
+            {
+              "question": "Na administração pública, o que o conceito de 'limite' ajuda um gestor a entender principalmente?",
+              "hint": "Pense no que acontece quando um sistema se aproxima de sua capacidade máxima ou de uma tendência de longo prazo.",
+              "answerOptions": [
+                {"text": "O custo exato de um serviço em um momento específico.", "rationale": "Isso descreve o valor de uma função em um único ponto, não seu comportamento à medida que se aproxima de um ponto.", "isCorrect": false},
+                {"text": "A tendência de longo prazo ou o comportamento de um sistema à medida que se aproxima de um ponto crítico.", "rationale": "Isso captura corretamente a essência de um limite, que é sobre entender o comportamento de um sistema perto de um limite ou seu estado final.", "isCorrect": true},
+                {"text": "O orçamento inicial alocado para um projeto.", "rationale": "Este é um valor inicial fixo, não uma tendência dinâmica ou um comportamento de fronteira que um limite descreve.", "isCorrect": false},
+                {"text": "A taxa mais rápida de mudança na demanda por serviços.", "rationale": "Isso descreve uma taxa máxima de mudança (uma derivada), não um limite.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Usando a função de satisfação do paciente $S(m) = -0.2m^2 + 4m + 60$, qual valor o índice de satisfação se aproxima à medida que o número de médicos, $m$, se aproxima muito de 10?",
+              "hint": "Para encontrar o limite quando m se aproxima de um número específico, substitua esse número na função.",
+              "answerOptions": [
+                {"text": "80", "rationale": "Este é o resultado do cálculo de S(10) = -0.2(10^2) + 4(10) + 60 = -20 + 40 + 60 = 80.", "isCorrect": true},
+                {"text": "100", "rationale": "Isso pode resultar de um erro de cálculo, como um erro de vírgula ou ignorar o sinal negativo no primeiro termo.", "isCorrect": false},
+                {"text": "60", "rationale": "Este é o valor de S(0), representando a satisfação de linha de base sem médicos, não o valor quando m se aproxima de 10.", "isCorrect": false},
+                {"text": "50", "rationale": "Este valor surgiria de um erro de cálculo significativo nos termos da função.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "A função $C(m)$ descreve o número total de consultas. O que sua derivada, $C'(m)$, representa em termos práticos?",
+              "hint": "Uma derivada mede a mudança 'marginal', ou como uma quantidade muda em resposta a uma pequena mudança em outra.",
+              "answerOptions": [
+                {"text": "O número médio de consultas por médico.", "rationale": "A média seria calculada dividindo o total de consultas pelo número de médicos (C(m)/m), o que é diferente da derivada.", "isCorrect": false},
+                {"text": "O número total de consultas realizadas em um dia.", "rationale": "Este é o valor da função original, C(m), que fornece a quantidade total, não sua taxa de variação.", "isCorrect": false},
+                {"text": "O número adicional de consultas esperado ao contratar mais um médico.", "rationale": "Esta é a interpretação correta da derivada como uma taxa de variação marginal, mostrando o impacto de adicionar mais uma unidade.", "isCorrect": true},
+                {"text": "O número ideal de médicos necessários para maximizar as consultas.", "rationale": "Esse número ideal é encontrado definindo a derivada como zero e resolvendo para m; não é o que a própria função derivada representa.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Qual é a derivada, $S'(m)$, da função de satisfação do paciente $S(m) = -0.2m^2 + 4m + 60$?",
+              "hint": "Aplique a regra da potência ($d/dx(ax^n) = n \\cdot ax^{n-1}$) a cada termo da função. Lembre-se que a derivada de uma constante é zero.",
+              "answerOptions": [
+                {"text": "$S'(m) = -0.4m + 4$", "rationale": "Isso está correto, pois a derivada de $-0.2m^2$ é $-0.4m$, a derivada de $4m$ é $4$, e a derivada de $60$ é $0$.", "isCorrect": true},
+                {"text": "$S'(m) = -0.2m + 4$", "rationale": "Isso está incorreto porque o expoente (2) não foi multiplicado pelo coeficiente (-0.2) no primeiro termo.", "isCorrect": false},
+                {"text": "$S'(m) = -0.4m^2 + 4$", "rationale": "Isso está incorreto porque o expoente de m deve diminuir em 1 após a diferenciação (de $m^2$ para $m$).", "isCorrect": false},
+                {"text": "$S'(m) = -0.4m$", "rationale": "Isso está incorreto, pois omite a derivada do termo '4m'.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Se a UBS atualmente tem 5 médicos em serviço ($m=5$), qual é a mudança marginal na satisfação do paciente ($S'(5)$) ao adicionar mais um médico? Use a derivada $S'(m) = -0.4m + 4$.",
+              "hint": "Calcule o valor da função derivada S'(m) substituindo m=5.",
+              "answerOptions": [
+                {"text": "2", "rationale": "Este é o cálculo correto: S'(5) = -0.4(5) + 4 = -2 + 4 = 2. Espera-se que a adição de um sexto médico aumente o índice de satisfação em 2 pontos.", "isCorrect": true},
+                {"text": "4", "rationale": "Este seria o resultado se o termo '-0.4m' fosse ignorado, o que está incorreto.", "isCorrect": false},
+                {"text": "75", "rationale": "Este é o valor da função original S(5), não sua derivada. Ele representa a satisfação total, não sua taxa de variação.", "isCorrect": false},
+                {"text": "-2", "rationale": "Este é o valor apenas do primeiro termo (-0.4 * 5), antes de adicionar a constante 4.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Se a gerência calcula que para um certo número de médicos a taxa marginal de consultas é $C'(m) = 0$, qual é a implicação estratégica mais significativa?",
+              "hint": "Uma taxa de variação zero significa que o valor não está mais aumentando ou diminuindo.",
+              "answerOptions": [
+                {"text": "A UBS atingiu o pico de consultas diárias, e a contratação de mais médicos não irá aumentá-las.", "rationale": "Uma derivada zero indica um ponto estacionário. Para este tipo de função, representa a produção máxima, o que significa que o sistema está no seu ponto mais produtivo.", "isCorrect": true},
+                {"text": "O sistema está com problemas e nenhuma consulta pode ser realizada.", "rationale": "Isso significaria C(m)=0. Uma derivada de zero significa que a taxa de variação é zero, não a quantidade total em si.", "isCorrect": false},
+                {"text": "A qualidade das consultas está no seu ponto mais baixo.", "rationale": "A função C(m) mede a quantidade, não a qualidade. A derivada C'(m) mede a taxa de variação dessa quantidade.", "isCorrect": false},
+                {"text": "O custo de contratação de um novo médico tornou-se muito alto.", "rationale": "Esta função derivada descreve a taxa de consultas, não o custo das operações.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Para determinar o número de médicos que maximiza o número de consultas diárias, $C(m)$, qual é o primeiro passo matemático essencial?",
+              "hint": "O pico de uma curva (um ponto de máximo) tem uma inclinação específica e identificável.",
+              "answerOptions": [
+                {"text": "Igualar a função original $C(m)$ a zero e resolver para $m$.", "rationale": "Isso encontraria quando o número de consultas é zero, não quando está no máximo.", "isCorrect": false},
+                {"text": "Calcular a derivada, $C'(m)$, igualá-la a zero e resolver para $m$.", "rationale": "A derivada representa a inclinação da função, e a inclinação em um ponto de máximo é zero. Este é o procedimento correto para otimização.", "isCorrect": true},
+                {"text": "Calcular o valor de $C(m)$ para um número muito grande de médicos.", "rationale": "Isso mostraria a tendência de longo prazo da função, mas não identifica precisamente o ponto de máximo.", "isCorrect": false},
+                {"text": "Dividir a função $C(m)$ pelo número de médicos, $m$.", "rationale": "Isso calcula a média de consultas por médico, não o ponto onde o total de consultas é maximizado.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Qual é o número ideal de médicos ($m$) para maximizar o número total de consultas diárias, dado $C(m) = -0.5m^2 + 10m$?",
+              "hint": "Encontre a derivada de C(m), iguale a equação resultante a zero e resolva para m.",
+              "answerOptions": [
+                {"text": "10 médicos", "rationale": "A derivada é C'(m) = -m + 10. Igualando a zero (-m + 10 = 0) resulta em m = 10 como o número de médicos que maximiza as consultas.", "isCorrect": true},
+                {"text": "20 médicos", "rationale": "Isso pode resultar de um erro algébrico ao resolver -m + 10 = 0.", "isCorrect": false},
+                {"text": "5 médicos", "rationale": "Isso pode resultar de um erro ao calcular a derivada, como esquecer de multiplicar pelo expoente.", "isCorrect": false},
+                {"text": "50 médicos", "rationale": "Este é o valor máximo de C(m), que é C(10)=50. A pergunta pede o número de médicos (m), não o número máximo de consultas.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "Qual é o número ideal de médicos ($m$) para maximizar o índice de satisfação do paciente, dado $S(m) = -0.2m^2 + 4m + 60$?",
+              "hint": "Siga o mesmo processo de otimização: encontre a derivada de S(m), iguale a zero e resolva.",
+              "answerOptions": [
+                {"text": "10 médicos", "rationale": "A derivada é S'(m) = -0.4m + 4. Igualando a zero (-0.4m + 4 = 0) resulta em 0.4m = 4, então m = 10.", "isCorrect": true},
+                {"text": "20 médicos", "rationale": "Isso pode resultar de um erro de cálculo ao resolver a equação, por exemplo, dividindo 4 por 0.2 em vez de 0.4.", "isCorrect": false},
+                {"text": "8 médicos", "rationale": "Este número é plausível, mas não é o resultado da resolução correta do problema de otimização.", "isCorrect": false},
+                {"text": "80 médicos", "rationale": "Este é o valor máximo do índice de satisfação, S(10)=80. A pergunta pede o valor de m que produz esse máximo.", "isCorrect": false}
+              ]
+            },
+            {
+              "question": "A análise mostra que tanto as consultas quanto a satisfação são maximizadas com 10 médicos. Se o orçamento permite apenas a contratação de 8 médicos, qual é o principal *trade-off* que o gerente está enfrentando?",
+              "hint": "Considere o que acontece com C(m) e S(m) na parte crescente de suas curvas (quando m é menor que o número ideal).",
+              "answerOptions": [
+                {"text": "O gerente deve escolher entre maximizar as consultas ou maximizar a satisfação do paciente.", "rationale": "Este não é o trade-off, pois com 8 médicos, ambas as métricas estão abaixo do seu pico. Aumentar para 9 médicos melhoraria ambas.", "isCorrect": false},
+                {"text": "O gerente está trocando o alcance da máxima eficiência operacional por permanecer dentro do orçamento.", "rationale": "Isso descreve com precisão a situação. O estado ideal (10 médicos) não pode ser atingido devido ao orçamento, então eles operam em um nível subótimo, mas acessível.", "isCorrect": true},
+                {"text": "O gerente está aceitando menos consultas para atingir maior satisfação do paciente.", "rationale": "Isso está incorreto porque com 8 médicos, tanto as consultas quanto a satisfação estão abaixo do seu potencial máximo. Um não está sendo sacrificado pelo outro.", "isCorrect": false},
+                {"text": "O gerente não tem *trade-off* porque a contratação de mais médicos diminuiria ambas as métricas.", "rationale": "Isso está incorreto. A contratação de mais médicos (de 8 até o ideal de 10) aumentaria ambas as métricas.", "isCorrect": false}
+              ]
+            }
+          ]
+        };
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answeredCurrentQuestion = false; // Flag para controlar se a pergunta atual foi respondida
+
+        const questionText = document.getElementById('question-text');
+        const answerOptionsContainer = document.getElementById('answer-options');
+        const feedbackText = document.getElementById('feedback-text');
+        const hintText = document.getElementById('hint-text');
+        const showHintButton = document.getElementById('show-hint-button');
+        const nextQuestionButton = document.getElementById('next-question-button');
+        const quizSection = document.getElementById('quiz-container');
+        const resultsSection = document.getElementById('results-section');
+        const finalScoreText = document.getElementById('final-score').querySelector('span');
+        const resultsMessage = document.getElementById('results-message');
+        const restartQuizButton = document.getElementById('restart-quiz-button');
+
+        // Função para embaralhar um array (Fisher-Yates shuffle)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Troca elementos
+            }
+        }
+
+        // Função para renderizar a pergunta atual
+        function displayQuestion() {
+            // Limpa o estado anterior
+            feedbackText.textContent = '';
+            hintText.textContent = '';
+            hintText.classList.add('hidden');
+            nextQuestionButton.classList.add('opacity-50', 'cursor-not-allowed');
+            nextQuestionButton.disabled = true;
+            showHintButton.disabled = false;
+            answeredCurrentQuestion = false;
+
+            if (currentQuestionIndex < quizData.questions.length) {
+                const currentQuestion = quizData.questions[currentQuestionIndex];
+                questionText.innerHTML = currentQuestion.question; // Usar innerHTML para LaTeX
+
+                answerOptionsContainer.innerHTML = ''; // Limpa opções anteriores
+                const shuffledOptions = [...currentQuestion.answerOptions];
+                shuffleArray(shuffledOptions); // Embaralha as opções
+
+                shuffledOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option.text;
+                    button.classList.add(
+                        'answer-button',
+                        'bg-gray-200', 'hover:bg-gray-300', 'text-gray-800',
+                        'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'shadow-sm',
+                        'transition-colors', 'duration-200', 'w-full', 'text-left'
+                    );
+                    button.addEventListener('click', () => checkAnswer(button, option));
+                    answerOptionsContainer.appendChild(button);
+                });
+            } else {
+                showResults();
+            }
+        }
+
+        // Função para verificar a resposta
+        function checkAnswer(selectedButton, selectedOption) {
+            if (answeredCurrentQuestion) return; // Evita múltiplas respostas
+
+            answeredCurrentQuestion = true;
+            showHintButton.disabled = true; // Desabilita a dica após responder
+
+            // Desabilita todos os botões de resposta
+            Array.from(answerOptionsContainer.children).forEach(button => {
+                button.classList.add('disabled');
+                button.disabled = true;
+            });
+
+            if (selectedOption.isCorrect) {
+                score++;
+                selectedButton.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+                selectedButton.classList.add('correct');
+                feedbackText.textContent = 'Correto! ' + selectedOption.rationale;
+                feedbackText.classList.remove('text-red-600');
+                feedbackText.classList.add('text-green-600');
+            } else {
+                selectedButton.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+                selectedButton.classList.add('incorrect');
+                feedbackText.textContent = 'Incorreto. ' + selectedOption.rationale;
+                feedbackText.classList.remove('text-green-600');
+                feedbackText.classList.add('text-red-600');
+
+                // Enfatiza a resposta correta
+                Array.from(answerOptionsContainer.children).forEach(button => {
+                    const optionData = quizData.questions[currentQuestionIndex].answerOptions.find(opt => opt.text === button.textContent);
+                    if (optionData && optionData.isCorrect) {
+                        button.classList.add('correct-answer-highlight');
+                    }
+                });
+            }
+
+            // Habilita o botão de próxima pergunta
+            nextQuestionButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            nextQuestionButton.disabled = false;
+        }
+
+        // Função para mostrar a dica
+        showHintButton.addEventListener('click', () => {
+            const currentQuestion = quizData.questions[currentQuestionIndex];
+            hintText.textContent = 'Dica: ' + currentQuestion.hint;
+            hintText.classList.remove('hidden');
+        });
+
+        // Função para avançar para a próxima pergunta ou mostrar resultados
+        nextQuestionButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            displayQuestion();
+        });
+
+        // Função para mostrar a tela de resultados
+        function showResults() {
+            quizSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            finalScoreText.textContent = score;
+
+            let message = '';
+            if (score === quizData.questions.length) {
+                message = 'Parabéns! Você acertou todas as perguntas!';
+                resultsMessage.classList.add('text-green-700');
+            } else if (score >= quizData.questions.length / 2) {
+                message = 'Bom trabalho! Você tem um bom entendimento do assunto.';
+                resultsMessage.classList.add('text-blue-700');
+            } else {
+                message = 'Continue estudando! Há espaço para melhorar.';
+                resultsMessage.classList.add('text-red-700');
+            }
+            resultsMessage.textContent = message;
+        }
+
+        // Função para reiniciar o quiz
+        restartQuizButton.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+            resultsMessage.classList.remove('text-green-700', 'text-blue-700', 'text-red-700'); // Limpa classes de cor
+            displayQuestion();
+        });
+
+        // Inicia o quiz ao carregar a página
+        document.addEventListener('DOMContentLoaded', displayQuestion);
+    </script>
+</body>
+</html>
